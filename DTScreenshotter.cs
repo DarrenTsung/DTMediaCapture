@@ -21,7 +21,7 @@ namespace DTScreenshotter {
 		[SerializeField]
 		private KeyCode togglePauseKey_ = KeyCode.O;
 		[SerializeField]
-		private KeyCode screenshotKey_ = KeyCode.P;
+		private KeyCode screenshotKey_ = KeyCode.L;
 
 		private bool paused_ = false;
 		private float oldTimeScale_ = 1.0f;
