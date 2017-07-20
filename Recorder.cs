@@ -30,6 +30,12 @@ namespace DTMediaCapture {
 		[SerializeField]
 		private KeyCode toggleRecordingKey_ = KeyCode.K;
 
+		[Header("Read-Only")]
+		[SerializeField]
+		#pragma warning disable 0414 // this variable is not used because it just for exposing in editor
+		private float recordingTime_ = 0.0f;
+		#pragma warning restore 0414
+
 		private string populatedRecordingPath_;
 
 		private bool recording_ = false;
@@ -110,6 +116,8 @@ namespace DTMediaCapture {
 				Application.CaptureScreenshot(screenshotPath);
 			}
 			frameCount_++;
+
+			recordingTime_ = (float)frameCount_ / (float)frameRate_;
 		}
 
 		private void RefreshSequencePath() {
