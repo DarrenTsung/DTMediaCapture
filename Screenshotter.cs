@@ -4,12 +4,10 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
+using DTMediaCapture.Internal;
 
-namespace DTScreenshotter {
-	public class DTScreenshotter : MonoBehaviour {
+namespace DTMediaCapture {
+	public class Screenshotter : MonoBehaviour {
 		// PRAGMA MARK - Internal
 		[Header("Properties")]
 		[SerializeField]
@@ -54,7 +52,7 @@ namespace DTScreenshotter {
 
 		private void CaptureScreenshot() {
 			string screenshotPath = screenshotPath_;
-			screenshotPath = screenshotPath.Replace("${DESKTOP}", Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
+			screenshotPath = SavePathUtil.PopulateDesktopVariable(screenshotPath);
 
 			string screenshotName = Path.GetFileNameWithoutExtension(screenshotNameFormat_);
 			if (!screenshotName.Contains("${INDEX}")) {
