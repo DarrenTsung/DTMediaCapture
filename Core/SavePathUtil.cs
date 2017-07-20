@@ -10,5 +10,9 @@ namespace DTMediaCapture.Internal {
 		public static string PopulateDesktopVariable(string path) {
 			return path.Replace("${DESKTOP}", Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
 		}
+
+		public static string PopulateDateVariable(string path) {
+			return path.Replace("${DATE}", System.DateTime.Now.ToString("MM-dd-yyyy"));
+		}
 	}
 }
