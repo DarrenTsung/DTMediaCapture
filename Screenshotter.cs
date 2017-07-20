@@ -13,7 +13,7 @@ namespace DTMediaCapture {
 		[SerializeField]
 		private string screenshotPath_ = "${DESKTOP}/Screenshots";
 		[SerializeField]
-		private string screenshotNameFormat_ = "Screenshot__${DATE}_${INDEX}";
+		private string screenshotNameFormat_ = "Screenshot__${DATE}__${INDEX}";
 
 		[Space]
 		[SerializeField]

@@ -4,6 +4,10 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 using DTMediaCapture.Internal;
 
 namespace DTMediaCapture {
@@ -12,7 +16,9 @@ namespace DTMediaCapture {
 		// PRAGMA MARK - Internal
 		[Header("Properties")]
 		[SerializeField]
-		private string sequencePathFormat_ = "${DESKTOP}/Recordings/${DATE}_${INDEX}";
+		private string recordingPath_ = "${DESKTOP}/Recordings";
+		[SerializeField]
+		private string recordingNameFormat_ = "Recording__${DATE}__${INDEX}";
 
 		[Space]
 		[SerializeField, Range(1, 60)]
@@ -25,13 +31,16 @@ namespace DTMediaCapture {
 		private bool recording_ = false;
 		private int frameCount_ = -1;
 
-		private string currentSequencePath_;
+		private string currentRecordingName_;
 
 		private void Awake() {
 			if (!Debug.isDebugBuild) {
 				this.enabled = false;
 				return;
 			}
+
+			// populate recording path
+			recordingPath_ = SavePathUtil.PopulateDesktopVariable(recordingPath_);
 		}
 
 		private void Update() {
@@ -44,8 +53,12 @@ namespace DTMediaCapture {
 					Debug.Log("Starting Recording!");
 				} else {
 					Time.captureFramerate = 0;
-					currentSequencePath_ = null;
-					Debug.Log("Ending Recording!");
+#if UNITY_EDITOR
+					CreateVideoFromCurrentSequence();
+#endif
+
+					currentRecordingName_ = null;
+					Debug.Log("Finished Recording!");
 				}
 			}
 
@@ -57,42 +70,68 @@ namespace DTMediaCapture {
 				return;
 			}
 
-			if (string.IsNullOrEmpty(currentSequencePath_)) {
+			if (string.IsNullOrEmpty(currentRecordingName_)) {
 				return;
 			}
 
 			if (frameCount_ > 0) {
-				var screenshotPath = Path.Combine(currentSequencePath_, "Frame" + frameCount_.ToString("000000") + ".png");
+				var currentRecordingPath = Path.Combine(recordingPath_, currentRecordingName_);
+				var screenshotPath = Path.Combine(currentRecordingPath, "Frame" + frameCount_.ToString("000000") + ".png");
 				Application.CaptureScreenshot(screenshotPath);
 			}
 			frameCount_++;
 		}
 
 		private void RefreshSequencePath() {
-			string sequencePath = sequencePathFormat_;
-			sequencePath = SavePathUtil.PopulateDesktopVariable(sequencePath);
+			string recordingNameFormat = recordingNameFormat_;
+			recordingNameFormat = SavePathUtil.PopulateDateVariable(recordingNameFormat);
 
-			if (!sequencePath.Contains("${INDEX}")) {
-				Debug.LogWarning("SequencePath is missing ${INDEX} - adding _${INDEX} to the end!");
-				sequencePath = sequencePath + "_${INDEX}";
+			if (!recordingNameFormat.Contains("${INDEX}")) {
+				Debug.LogWarning("RecordingNameFormat is missing ${INDEX} - adding _${INDEX} to the end!");
+				recordingNameFormat = recordingNameFormat + "_${INDEX}";
 			}
 
-			sequencePath = SavePathUtil.PopulateDateVariable(sequencePath);
-
-			string finalSequencePath = null;
+			string finalRecordingName = null;
 			int index = 0;
 			while (true) {
-				string currentSequencePath = sequencePath.Replace("${INDEX}", index.ToString());
+				string currentRecordingName  = recordingNameFormat.Replace("${INDEX}", index.ToString());
+				string currentRecordingPath = Path.Combine(recordingPath_, currentRecordingName);
 
-				if (!Directory.Exists(currentSequencePath)) {
-					finalSequencePath = currentSequencePath;
+				if (!Directory.Exists(currentRecordingPath)) {
+					finalRecordingName = currentRecordingName;
 					break;
 				}
 				index++;
 			}
 
-			Directory.CreateDirectory(finalSequencePath);
-			currentSequencePath_ = finalSequencePath;
+			Directory.CreateDirectory(Path.Combine(recordingPath_, finalRecordingName));
+			currentRecordingName_ = finalRecordingName;
+		}
+
+		private void CreateVideoFromCurrentSequence() {
+#if UNITY_EDITOR
+			if (string.IsNullOrEmpty(currentRecordingName_)) {
+				Debug.LogWarning("Cannot create video because no current recording name!");
+				return;
+			}
+
+			string binPath = ScriptableObjectEditorUtil.PathForScriptableObjectType<BinMarker>();
+			string pathToProject = Application.dataPath.Replace("Assets", "");
+			string binFullPath = Path.Combine(pathToProject, binPath);
+			string ffmpegPath = Path.Combine(binFullPath, "ffmpeg/ffmpeg");
+
+			string arguments = string.Format("-f image2 -r {0} -i ./{1}/Frame%06d.png -c:v libx264 -r {0} -b:v 30M -pix_fmt yuv420p {1}.mp4 -loglevel debug", frameRate_, currentRecordingName_);
+
+			var process = new System.Diagnostics.Process();
+			process.StartInfo.FileName = ffmpegPath;
+			process.StartInfo.Arguments = arguments;
+			process.StartInfo.WorkingDirectory = recordingPath_;
+			process.Start();
+
+			process.WaitForExit(60 * 1000); // 60 seconds max
+
+			Directory.Delete(Path.Combine(recordingPath_, currentRecordingName_), recursive: true);
+#endif
 		}
 	}
 }
