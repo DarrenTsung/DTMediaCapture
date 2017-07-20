@@ -28,6 +28,8 @@ namespace DTMediaCapture {
 		[SerializeField]
 		private KeyCode toggleRecordingKey_ = KeyCode.K;
 
+		private string populatedRecordingPath_;
+
 		private bool recording_ = false;
 		private int frameCount_ = -1;
 
@@ -40,7 +42,8 @@ namespace DTMediaCapture {
 			}
 
 			// populate recording path
-			recordingPath_ = SavePathUtil.PopulateDesktopVariable(recordingPath_);
+			populatedRecordingPath_ = recordingPath_;
+			populatedRecordingPath_ = SavePathUtil.PopulateDesktopVariable(populatedRecordingPath_);
 		}
 
 		private void Update() {
@@ -75,7 +78,7 @@ namespace DTMediaCapture {
 			}
 
 			if (frameCount_ > 0) {
-				var currentRecordingPath = Path.Combine(recordingPath_, currentRecordingName_);
+				var currentRecordingPath = Path.Combine(populatedRecordingPath_, currentRecordingName_);
 				var screenshotPath = Path.Combine(currentRecordingPath, "Frame" + frameCount_.ToString("000000") + ".png");
 				Application.CaptureScreenshot(screenshotPath);
 			}
@@ -95,7 +98,7 @@ namespace DTMediaCapture {
 			int index = 0;
 			while (true) {
 				string currentRecordingName  = recordingNameFormat.Replace("${INDEX}", index.ToString());
-				string currentRecordingPath = Path.Combine(recordingPath_, currentRecordingName);
+				string currentRecordingPath = Path.Combine(populatedRecordingPath_, currentRecordingName);
 
 				if (!Directory.Exists(currentRecordingPath)) {
 					finalRecordingName = currentRecordingName;
@@ -104,7 +107,7 @@ namespace DTMediaCapture {
 				index++;
 			}
 
-			Directory.CreateDirectory(Path.Combine(recordingPath_, finalRecordingName));
+			Directory.CreateDirectory(Path.Combine(populatedRecordingPath_, finalRecordingName));
 			currentRecordingName_ = finalRecordingName;
 		}
 
@@ -125,12 +128,12 @@ namespace DTMediaCapture {
 			var process = new System.Diagnostics.Process();
 			process.StartInfo.FileName = ffmpegPath;
 			process.StartInfo.Arguments = arguments;
-			process.StartInfo.WorkingDirectory = recordingPath_;
+			process.StartInfo.WorkingDirectory = populatedRecordingPath_;
 			process.Start();
 
 			process.WaitForExit(60 * 1000); // 60 seconds max
 
-			Directory.Delete(Path.Combine(recordingPath_, currentRecordingName_), recursive: true);
+			Directory.Delete(Path.Combine(populatedRecordingPath_, currentRecordingName_), recursive: true);
 #endif
 		}
 	}
