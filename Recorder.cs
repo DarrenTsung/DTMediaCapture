@@ -23,6 +23,8 @@ namespace DTMediaCapture {
 		[Space]
 		[SerializeField, Range(1, 60)]
 		private int frameRate_ = 30;
+		[SerializeField]
+		private bool recordOnStart_ = false;
 
 		[Space]
 		[SerializeField]
@@ -46,22 +48,47 @@ namespace DTMediaCapture {
 			populatedRecordingPath_ = SavePathUtil.PopulateDesktopVariable(populatedRecordingPath_);
 		}
 
-		private void Update() {
-			if (Input.GetKeyDown(toggleRecordingKey_)) {
-				recording_ = !recording_;
-				if (recording_) {
-					frameCount_ = -1;
-					Time.captureFramerate = frameRate_;
-					RefreshSequencePath();
-					Debug.Log("Starting Recording!");
-				} else {
-					Time.captureFramerate = 0;
+		private void Start() {
+			if (recordOnStart_) {
+				StartRecording();
+			}
+		}
+
+		private void StartRecording() {
+			if (recording_) {
+				Debug.LogWarning("Can't start recording when already recording!");
+				return;
+			}
+
+			recording_ = true;
+			frameCount_ = -1;
+			Time.captureFramerate = frameRate_;
+			RefreshSequencePath();
+			Debug.Log("Starting Recording!");
+		}
+
+		private void StopRecording() {
+			if (!recording_) {
+				Debug.LogWarning("Can't stop recording when not recording!");
+				return;
+			}
+
+			recording_ = false;
+			Time.captureFramerate = 0;
 #if UNITY_EDITOR
-					CreateVideoFromCurrentSequence();
+			CreateVideoFromCurrentSequence();
 #endif
 
-					currentRecordingName_ = null;
-					Debug.Log("Finished Recording!");
+			currentRecordingName_ = null;
+			Debug.Log("Finished Recording!");
+		}
+
+		private void Update() {
+			if (Input.GetKeyDown(toggleRecordingKey_)) {
+				if (recording_) {
+					StopRecording();
+				} else {
+					StartRecording();
 				}
 			}
 
@@ -98,9 +125,9 @@ namespace DTMediaCapture {
 			int index = 0;
 			while (true) {
 				string currentRecordingName  = recordingNameFormat.Replace("${INDEX}", index.ToString());
-				string currentRecordingPath = Path.Combine(populatedRecordingPath_, currentRecordingName);
+				string currentRecordingPath = Path.Combine(populatedRecordingPath_, currentRecordingName) + ".mp4";
 
-				if (!Directory.Exists(currentRecordingPath)) {
+				if (!File.Exists(currentRecordingPath)) {
 					finalRecordingName = currentRecordingName;
 					break;
 				}
