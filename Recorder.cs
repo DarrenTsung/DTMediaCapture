@@ -23,18 +23,20 @@ namespace DTMediaCapture {
 		[Space]
 		[SerializeField, Range(1, 60)]
 		private int frameRate_ = 30;
-		[SerializeField]
-		private bool recordOnStart_ = false;
 
 		[Space]
 		[SerializeField]
 		private KeyCode toggleRecordingKey_ = KeyCode.K;
 
+		[Header("Record Set Length")]
+		[SerializeField]
+		private float recordSetLengthInSeconds_ = 10.0f;
+		[SerializeField]
+		private bool recordSetLengthOnStart_ = false;
+
 		[Header("Read-Only")]
 		[SerializeField]
-		#pragma warning disable 0414 // this variable is not used because it just for exposing in editor
 		private float recordingTime_ = 0.0f;
-		#pragma warning restore 0414
 
 		private string populatedRecordingPath_;
 
@@ -55,7 +57,7 @@ namespace DTMediaCapture {
 		}
 
 		private void Start() {
-			if (recordOnStart_) {
+			if (recordSetLengthOnStart_) {
 				StartRecording();
 			}
 		}
@@ -118,6 +120,9 @@ namespace DTMediaCapture {
 			frameCount_++;
 
 			recordingTime_ = (float)frameCount_ / (float)frameRate_;
+			if (recordSetLengthOnStart_ && recordingTime_ > recordSetLengthInSeconds_) {
+				StopRecording();
+			}
 		}
 
 		private void RefreshSequencePath() {
@@ -166,7 +171,7 @@ namespace DTMediaCapture {
 			process.StartInfo.WorkingDirectory = populatedRecordingPath_;
 			process.Start();
 
-			process.WaitForExit(60 * 1000); // 60 seconds max
+			process.WaitForExit(5 * 60 * 1000); // 5 minutes max
 
 			Directory.Delete(Path.Combine(populatedRecordingPath_, currentRecordingName_), recursive: true);
 #endif
