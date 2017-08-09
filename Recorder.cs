@@ -77,8 +77,7 @@ namespace DTMediaCapture {
 			var inspector = DTDebugMenu.GenericInspectorRegistry.Get("DTMediaCapture");
 			inspector.BeginDynamic();
 			inspector.RegisterHeader("Recorder");
-			// TODO (darren): register dynamic button
-			//inspector.RegisterButton("Start Recording" + (useKeyBindings_ ? string.Format("({0})", toggleRecordingKey_) : ""), TogglePausedTimeScale);
+			inspector.RegisterField<bool>("Set Recording: " + (useKeyBindings_ ? string.Format("({0})", toggleRecordingKey_) : ""), (b) => { if (b) { StartRecording(); } else { StopRecording(); }}, () => recording_);
 			dynamicGroup_ = inspector.EndDynamic();
 			#endif
 		}
@@ -124,8 +123,8 @@ namespace DTMediaCapture {
 			Time.captureFramerate = 0;
 			CreateVideoFromCurrentSequence();
 
-			currentRecordingName_ = null;
 			Debug.Log("Finished Recording! Saved video at: " + currentRecordingName_ + "!");
+			currentRecordingName_ = null;
 		}
 
 		private void Update() {
