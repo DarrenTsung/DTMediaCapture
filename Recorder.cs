@@ -45,6 +45,10 @@ namespace DTMediaCapture {
 
 		private string currentRecordingName_;
 
+		#if DT_DEBUG_MENU
+		private DTDebugMenu.IDynamicGroup dynamicGroup_;
+		#endif
+
 		private void Awake() {
 			bool debug = Debug.isDebugBuild;
 			#if DEBUG
@@ -59,6 +63,27 @@ namespace DTMediaCapture {
 			// populate recording path
 			populatedRecordingPath_ = recordingPath_;
 			populatedRecordingPath_ = SavePathUtil.PopulateDesktopVariable(populatedRecordingPath_);
+
+			#if DT_DEBUG_MENU
+			var inspector = DTDebugMenu.GenericInspectorRegistry.Get("DTMediaCapture");
+			inspector.BeginDynamic();
+			inspector.RegisterHeader("Recorder");
+			// TODO (darren): register dynamic button
+			//inspector.RegisterButton("Start Recording", TogglePausedTimeScale);
+			dynamicGroup_ = inspector.EndDynamic();
+			#endif
+		}
+
+		private void OnEnable() {
+			#if DT_DEBUG_MENU
+			dynamicGroup_.Enabled = true;
+			#endif
+		}
+
+		private void OnDisable() {
+			#if DT_DEBUG_MENU
+			dynamicGroup_.Enabled = false;
+			#endif
 		}
 
 		private void Start() {
