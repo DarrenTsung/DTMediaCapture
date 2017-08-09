@@ -15,6 +15,9 @@ namespace DTMediaCapture {
 		[SerializeField]
 		private string screenshotNameFormat_ = "Screenshot__${DATE}__${INDEX}";
 
+		[Header("Key-Bindings")]
+		[SerializeField]
+		private bool useKeyBindings_ = true;
 		[Space]
 		[SerializeField]
 		private KeyCode togglePauseKey_ = KeyCode.O;
@@ -43,8 +46,8 @@ namespace DTMediaCapture {
 			var inspector = DTDebugMenu.GenericInspectorRegistry.Get("DTMediaCapture");
 			inspector.BeginDynamic();
 			inspector.RegisterHeader("Screenshotter");
-			inspector.RegisterButton("Toggle Paused TimeScale", TogglePausedTimeScale);
-			inspector.RegisterButton("Capture Screenshot", CaptureScreenshot);
+			inspector.RegisterButton("Toggle Paused TimeScale " + (useKeyBindings_ ? string.Format("({0})", togglePauseKey_) : ""), TogglePausedTimeScale);
+			inspector.RegisterButton("Capture Screenshot " + (useKeyBindings_ ? string.Format("({0})", screenshotKey_) : ""), CaptureScreenshot);
 			dynamicGroup_ = inspector.EndDynamic();
 			#endif
 		}
@@ -62,12 +65,14 @@ namespace DTMediaCapture {
 		}
 
 		private void Update() {
-			if (Input.GetKeyDown(togglePauseKey_)) {
-				TogglePausedTimeScale();
-			}
+			if (useKeyBindings_) {
+				if (Input.GetKeyDown(togglePauseKey_)) {
+					TogglePausedTimeScale();
+				}
 
-			if (Input.GetKeyDown(screenshotKey_)) {
-				CaptureScreenshot();
+				if (Input.GetKeyDown(screenshotKey_)) {
+					CaptureScreenshot();
+				}
 			}
 		}
 

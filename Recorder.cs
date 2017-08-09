@@ -24,6 +24,9 @@ namespace DTMediaCapture {
 		[SerializeField, Range(1, 60)]
 		private int frameRate_ = 30;
 
+		[Header("Key-Bindings")]
+		[SerializeField]
+		private bool useKeyBindings_ = true;
 		[Space]
 		[SerializeField]
 		private KeyCode toggleRecordingKey_ = KeyCode.K;
@@ -69,7 +72,7 @@ namespace DTMediaCapture {
 			inspector.BeginDynamic();
 			inspector.RegisterHeader("Recorder");
 			// TODO (darren): register dynamic button
-			//inspector.RegisterButton("Start Recording", TogglePausedTimeScale);
+			//inspector.RegisterButton("Start Recording" + (useKeyBindings_ ? string.Format("({0})", toggleRecordingKey_) : ""), TogglePausedTimeScale);
 			dynamicGroup_ = inspector.EndDynamic();
 			#endif
 		}
@@ -122,11 +125,13 @@ namespace DTMediaCapture {
 		}
 
 		private void Update() {
-			if (Input.GetKeyDown(toggleRecordingKey_)) {
-				if (recording_) {
-					StopRecording();
-				} else {
-					StartRecording();
+			if (useKeyBindings_) {
+				if (Input.GetKeyDown(toggleRecordingKey_)) {
+					if (recording_) {
+						StopRecording();
+					} else {
+						StartRecording();
+					}
 				}
 			}
 
