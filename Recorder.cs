@@ -123,7 +123,8 @@ namespace DTMediaCapture {
 			Time.captureFramerate = 0;
 			CreateVideoFromCurrentSequence();
 
-			Debug.Log("Finished Recording! Saved video at: " + currentRecordingName_ + "!");
+			var currentRecordingPath = Path.Combine(populatedRecordingPath_, currentRecordingName_);
+			Debug.Log("Finished Recording! Saved video at: " + currentRecordingPath + "!");
 			currentRecordingName_ = null;
 		}
 
