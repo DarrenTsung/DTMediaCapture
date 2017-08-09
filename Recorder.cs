@@ -21,6 +21,12 @@ namespace DTMediaCapture {
 		private string recordingNameFormat_ = "Recording__${DATE}__${INDEX}";
 
 		[Space]
+		#pragma warning disable 0414 // not used because used inside !UNITY_EDITOR
+		[SerializeField]
+		private string nonEditorFfmpegPath_ = "${DESKTOP}/Ffmpeg/ffmpeg";
+		#pragma warning restore 0414
+
+		[Space]
 		[SerializeField, Range(1, 60)]
 		private int frameRate_ = 30;
 
@@ -116,12 +122,10 @@ namespace DTMediaCapture {
 
 			recording_ = false;
 			Time.captureFramerate = 0;
-#if UNITY_EDITOR
 			CreateVideoFromCurrentSequence();
-#endif
 
 			currentRecordingName_ = null;
-			Debug.Log("Finished Recording!");
+			Debug.Log("Finished Recording! Saved video at: " + currentRecordingName_ + "!");
 		}
 
 		private void Update() {
@@ -187,16 +191,20 @@ namespace DTMediaCapture {
 		}
 
 		private void CreateVideoFromCurrentSequence() {
-#if UNITY_EDITOR
 			if (string.IsNullOrEmpty(currentRecordingName_)) {
 				Debug.LogWarning("Cannot create video because no current recording name!");
 				return;
 			}
 
+			string ffmpegPath = "";
+#if UNITY_EDITOR
 			string binPath = ScriptableObjectEditorUtil.PathForScriptableObjectType<BinMarker>();
 			string pathToProject = Application.dataPath.Replace("Assets", "");
 			string binFullPath = Path.Combine(pathToProject, binPath);
-			string ffmpegPath = Path.Combine(binFullPath, "ffmpeg/ffmpeg");
+			ffmpegPath = Path.Combine(binFullPath, "ffmpeg/ffmpeg");
+#else
+			ffmpegPath = SavePathUtil.PopulateDesktopVariable(nonEditorFfmpegPath_);
+#endif
 
 			string arguments = string.Format("-f image2 -r {0} -i ./{1}/Frame%06d.png -c:v libx264 -r {0} -b:v 30M -pix_fmt yuv420p {1}.mp4 -loglevel debug", frameRate_, currentRecordingName_);
 
@@ -209,7 +217,6 @@ namespace DTMediaCapture {
 			process.WaitForExit(5 * 60 * 1000); // 5 minutes max
 
 			Directory.Delete(Path.Combine(populatedRecordingPath_, currentRecordingName_), recursive: true);
-#endif
 		}
 	}
 }
