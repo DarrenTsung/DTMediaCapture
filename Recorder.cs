@@ -77,7 +77,7 @@ namespace DTMediaCapture {
 			var inspector = DTDebugMenu.GenericInspectorRegistry.Get("DTMediaCapture");
 			inspector.BeginDynamic();
 			inspector.RegisterHeader("Recorder");
-			inspector.RegisterField<bool>("Set Recording: " + (useKeyBindings_ ? string.Format("({0})", toggleRecordingKey_) : ""), (b) => { if (b) { StartRecording(); } else { StopRecording(); }}, () => recording_);
+			inspector.RegisterToggle("Set Recording: " + (useKeyBindings_ ? string.Format("({0})", toggleRecordingKey_) : ""), (b) => { if (b) { StartRecording(); } else { StopRecording(); }}, () => recording_);
 			dynamicGroup_ = inspector.EndDynamic();
 			#endif
 		}
