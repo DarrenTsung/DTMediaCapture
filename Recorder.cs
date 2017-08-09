@@ -46,7 +46,12 @@ namespace DTMediaCapture {
 		private string currentRecordingName_;
 
 		private void Awake() {
-			if (!Debug.isDebugBuild) {
+			bool debug = Debug.isDebugBuild;
+			#if DEBUG
+			debug = true;
+			#endif
+
+			if (!debug) {
 				this.enabled = false;
 				return;
 			}

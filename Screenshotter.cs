@@ -25,7 +25,12 @@ namespace DTMediaCapture {
 		private float oldTimeScale_ = 1.0f;
 
 		private void Awake() {
-			if (!Debug.isDebugBuild) {
+			bool debug = Debug.isDebugBuild;
+			#if DEBUG
+			debug = true;
+			#endif
+
+			if (!debug) {
 				this.enabled = false;
 				return;
 			}
