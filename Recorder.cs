@@ -14,6 +14,11 @@ namespace DTMediaCapture {
 	// Based off keijiro's ImageSequenceOut (https://github.com/keijiro/ImageSequenceOut)
 	public class Recorder : MonoBehaviour {
 		// PRAGMA MARK - Internal
+		// constants for the wave file header
+		private const int HEADER_SIZE = 44;
+		private const short BITS_PER_SAMPLE = 16;
+		private const int SAMPLE_RATE = 44100;
+
 		[Header("Properties")]
 		[SerializeField]
 		private string recordingPath_ = "${DESKTOP}/Recordings";
@@ -48,11 +53,14 @@ namespace DTMediaCapture {
 		private float recordingTime_ = 0.0f;
 
 		private string populatedRecordingPath_;
+		private string currentRecordingName_;
 
 		private bool recording_ = false;
 		private int frameCount_ = -1;
 
-		private string currentRecordingName_;
+		private AudioRecorderProxy audioProxy_;
+		private MemoryStream audioOutputStream_;
+		private BinaryWriter audioOutputWriter_;
 
 		#if DT_DEBUG_MENU
 		private DTDebugMenu.IDynamicGroup dynamicGroup_;
@@ -110,6 +118,7 @@ namespace DTMediaCapture {
 			frameCount_ = -1;
 			Time.captureFramerate = frameRate_;
 			RefreshSequencePath();
+			AttachAudioRecorderProxy();
 			Debug.Log("Starting Recording!");
 		}
 
@@ -121,7 +130,13 @@ namespace DTMediaCapture {
 
 			recording_ = false;
 			Time.captureFramerate = 0;
+			SaveAudioOutput();
 			CreateVideoFromCurrentSequence();
+
+			if (audioProxy_ != null) {
+				audioProxy_.Dispose();
+				audioProxy_ = null;
+			}
 
 			var currentRecordingPath = Path.Combine(populatedRecordingPath_, currentRecordingName_);
 			Debug.Log("Finished Recording! Saved video at: " + currentRecordingPath + "!");
@@ -155,6 +170,12 @@ namespace DTMediaCapture {
 				var currentRecordingPath = Path.Combine(populatedRecordingPath_, currentRecordingName_);
 				var screenshotPath = Path.Combine(currentRecordingPath, "Frame" + frameCount_.ToString("000000") + ".png");
 				Application.CaptureScreenshot(screenshotPath);
+
+				// write audio for frame
+				for (int i = 0; i < audioProxy_.BufferLength; i++) {
+					audioOutputWriter_.Write((short)(audioProxy_.AudioBuffer[i] * (float)Int16.MaxValue));
+				}
+				audioProxy_.FlushBuffer();
 			}
 			frameCount_++;
 
@@ -217,6 +238,104 @@ namespace DTMediaCapture {
 			process.WaitForExit(5 * 60 * 1000); // 5 minutes max
 
 			Directory.Delete(Path.Combine(populatedRecordingPath_, currentRecordingName_), recursive: true);
+		}
+
+		private void AttachAudioRecorderProxy() {
+			var audioListeners = UnityEngine.Object.FindObjectsOfType<AudioListener>();
+			if (audioListeners.Length == 0) {
+				return;
+			}
+
+			audioProxy_ = audioListeners.First().GetOrAddComponent<AudioRecorderProxy>();
+			audioProxy_.Init();
+
+			audioOutputStream_ = new MemoryStream();
+			audioOutputWriter_ = new BinaryWriter(audioOutputStream_);
+		}
+
+		private void SaveAudioOutput() {
+			string audioFilename = Path.Combine(populatedRecordingPath_, currentRecordingName_) + ".wav";
+			if (audioOutputStream_.Length > 0) {
+				// add a header to the file so we can send it to the SoundPlayer
+				AddHeader();
+
+				// Save to a file. Print a warning if overwriting a file.
+				if (File.Exists(audioFilename)) {
+					Debug.LogWarning("Overwriting " + audioFilename + "...");
+				}
+
+				// reset the stream pointer to the beginning of the stream
+				audioOutputStream_.Position = 0;
+
+				// write the stream to a file
+				FileStream fs = File.OpenWrite(audioFilename);
+				audioOutputStream_.WriteTo(fs);
+				fs.Close();
+
+				// for debugging only
+				Debug.Log("Finished saving audio to " + audioFilename + ".");
+			} else {
+				Debug.LogWarning("There is no audio data to save!");
+			}
+		}
+
+		/// Taken from Evan Merz's blog (http://evanxmerz.com/?p=212)
+		/// This generates a simple header for a canonical wave file,
+		/// which is the simplest practical audio file format. It
+		/// writes the header and the audio file to a new stream, then
+		/// moves the reference to that stream.
+		///
+		/// See this page for details on canonical wave files:
+		/// http://www.lightlink.com/tjweber/StripWav/Canon.html
+		private void AddHeader() {
+			int channels = audioProxy_.Channels;
+			Debug.LogError("channels: " + channels);
+
+			// reset the output stream
+			audioOutputStream_.Position = 0;
+
+			// calculate the number of samples in the data chunk
+			long numberOfSamples = audioOutputStream_.Length / (BITS_PER_SAMPLE / 8);
+
+			// create a new MemoryStream that will have both the audio data AND the header
+			MemoryStream newOutputStream = new MemoryStream();
+			BinaryWriter writer = new BinaryWriter(newOutputStream);
+
+			writer.Write(0x46464952); // "RIFF" in ASCII
+
+			// write the number of bytes in the entire file
+			writer.Write((int)(HEADER_SIZE + (numberOfSamples * BITS_PER_SAMPLE * channels / 8)) - 8);
+
+			writer.Write(0x45564157); // "WAVE" in ASCII
+			writer.Write(0x20746d66); // "fmt " in ASCII
+			writer.Write(16);
+
+			// write the format tag. 1 = PCM
+			writer.Write((short)1);
+
+			// write the number of channels.
+			writer.Write((short)channels);
+
+			// write the sample rate. 44100 in this case. The number of audio samples per second
+			writer.Write(SAMPLE_RATE);
+
+			writer.Write(SAMPLE_RATE * channels * (BITS_PER_SAMPLE / 8));
+			writer.Write((short)(channels * (BITS_PER_SAMPLE / 8)));
+
+			// 16 bits per sample
+			writer.Write(BITS_PER_SAMPLE);
+
+			// "data" in ASCII. Start the data chunk.
+			writer.Write(0x61746164);
+
+			// write the number of bytes in the data portion
+			writer.Write((int)(numberOfSamples * BITS_PER_SAMPLE * channels / 8));
+
+			// copy over the actual audio data
+			audioOutputStream_.WriteTo(newOutputStream);
+
+			// move the reference to the new stream
+			audioOutputStream_ = newOutputStream;
 		}
 	}
 }
