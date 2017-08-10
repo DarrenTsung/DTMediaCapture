@@ -23,7 +23,7 @@ namespace DTMediaCapture {
 		[Space]
 		#pragma warning disable 0414 // not used because used inside !UNITY_EDITOR
 		[SerializeField]
-		private string nonEditorFfmpegPath_ = "${DESKTOP}/Ffmpeg/ffmpeg";
+		private string nonEditorFfmpegPath_ = "${DESKTOP}/Ffmpeg";
 		#pragma warning restore 0414
 
 		[Space]
@@ -197,15 +197,22 @@ namespace DTMediaCapture {
 				return;
 			}
 
-			string ffmpegPath = "";
+			string ffmpegDirectoryPath = "";
 #if UNITY_EDITOR
 			string binPath = ScriptableObjectEditorUtil.PathForScriptableObjectType<BinMarker>();
 			string pathToProject = Application.dataPath.Replace("Assets", "");
 			string binFullPath = Path.Combine(pathToProject, binPath);
-			ffmpegPath = Path.Combine(binFullPath, "ffmpeg/ffmpeg");
+			ffmpegDirectoryPath = Path.Combine(binFullPath, "ffmpeg");
 #else
-			ffmpegPath = SavePathUtil.PopulateDesktopVariable(nonEditorFfmpegPath_);
+			ffmpegDirectoryPath = SavePathUtil.PopulateDesktopVariable(nonEditorFfmpegPath_);
 #endif
+
+			string ffmpegPath = "";
+			#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+			ffmpegPath = Path.Combine(ffmpegDirectoryPath, "ffmpeg_mac");
+			#else
+			ffmpegPath = Path.Combine(ffmpegDirectoryPath, "ffmpeg_win.exe");
+			#endif
 
 			string arguments = string.Format("-f image2 -r {0} -i ./{1}/Frame%06d.png -c:v libx264 -r {0} -b:v 30M -pix_fmt yuv420p {1}.mp4 -loglevel debug", frameRate_, currentRecordingName_);
 
