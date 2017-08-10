@@ -15,6 +15,10 @@ namespace DTMediaCapture {
 		[SerializeField]
 		private string screenshotNameFormat_ = "Screenshot__${DATE}__${INDEX}";
 
+		[Space]
+		[SerializeField]
+		private int superSizeFactor_ = 1;
+
 		[Header("Key-Bindings")]
 		[SerializeField]
 		private bool useKeyBindings_ = true;
@@ -119,7 +123,7 @@ namespace DTMediaCapture {
 				Directory.CreateDirectory(finalScreenshotDirectoryPath);
 			}
 
-			Application.CaptureScreenshot(finalScreenshotPath);
+			Application.CaptureScreenshot(finalScreenshotPath, superSizeFactor_);
 			Debug.Log("Saved screenshot at: " + finalScreenshotPath + "!");
 		}
 	}
