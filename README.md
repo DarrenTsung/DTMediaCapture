@@ -1,6 +1,11 @@
 # DTMediaCapture
 Simple scripts that capture screenshots and videos.
 
+### To Install:
+1. Download the DTMediaCapture project from this repository by pressing [this link](https://github.com/DarrenTsung/DTMediaCapture/archive/master.zip). It should automatically download the latest state of the master branch.
+2. Place the downloaded folder in your project. I recommend placing it in the Assets/Plugins directory so [it doesn’t add to your compile time](https://medium.com/@darrentsung/the-clocks-ticking-how-to-optimize-compile-time-in-unity-45d1f200572b). 
+
+
 ### Screenshots
 Uses Application.CaptureScreenshot to save a screenshot. To use:
 
@@ -14,7 +19,7 @@ To super-sample the current screen, change the superSizeFactor_.
 
 
 ### Videos
-Uses Time.captureFramerate to render out smooth captures. Combines frames into video with included ffmpeg executable (windows-untested).
+Uses Time.captureFramerate to render out smooth captures. Combines frames into video with included ffmpeg executable (windows executable supported but untested).
 
 1. Add the Recorder script to your scene.
 2. (optional) Configure where the recordings are saved.
